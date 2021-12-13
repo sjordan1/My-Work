@@ -1,0 +1,134 @@
+/* Homework 06: Network + Database programming
+ Course: CIS357
+ Due date: 6/26/19
+ Completed date: 6/27/19
+ Name: Scotty Jordan
+ Instructor: Il-Hyung Cho
+ Program description: The Server side of a server/client program. This server also
+ contains a database that is used to store items names, prices, and quantity.
+ This server passes this information to the client.
+ */
+package program6;
+
+//Inport needed libraries
+import javafx.application.Application;
+import javafx.geometry.Insets;
+import javafx.scene.Scene;
+import javafx.scene.control.Label;
+import javafx.scene.layout.GridPane;
+import javafx.stage.Stage;
+import java.io.*;
+import java.net.*;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import static javafx.application.Application.launch;
+import javafx.application.Platform;
+import javafx.scene.control.Alert;
+
+//Main class that hold program
+public class Program6 extends Application {
+
+    //Alert for messages to user
+    Alert alert = new Alert(Alert.AlertType.INFORMATION);
+
+    String Item = "";
+    String strItemID = "";
+    StringBuilder sb = new StringBuilder();
+
+    @Override
+    public void start(Stage primaryStage) throws SQLException, ClassNotFoundException {
+
+        GridPane root = new GridPane();
+        Label lblHostName = new Label("localhost");
+        Label lblAddress = new Label("NA");
+
+        root.setVgap(4);
+        root.setHgap(10);
+        root.setPadding(new Insets(10, 5, 5, 20));
+        root.add(new Label("Server Name"), 0, 0);
+        root.add(new Label("IP Address"), 0, 1);
+        root.add(lblHostName, 1, 0);
+        root.add(lblAddress, 1, 1);
+
+        Scene scene = new Scene(root, 200, 60);
+
+        primaryStage.setTitle("Server");
+        primaryStage.setScene(scene);
+        primaryStage.show();
+
+        new Thread(() -> {
+            try {
+                // Create a server socket
+                ServerSocket serverSocket = new ServerSocket(8001);
+
+                //Get host name and address
+                String strHostName = serverSocket.getInetAddress().getHostName();
+                int strAddress = serverSocket.getLocalPort();
+
+                //Set Labels for hostname and address
+                Platform.runLater(() -> {
+                    lblHostName.setText(strHostName);
+                    lblAddress.setText(String.valueOf(strAddress));
+                });
+
+                // Listen for a connection request
+                Socket socket = serverSocket.accept();
+
+                // Create data input and output streams
+                DataInputStream inputFromClient = new DataInputStream(
+                        socket.getInputStream());
+                DataOutputStream outputToClient = new DataOutputStream(
+                        socket.getOutputStream());
+
+                try {
+                    //Set Driver
+                    Class.forName("com.mysql.jdbc.Driver");
+
+                    while (true) {
+
+                        strItemID = inputFromClient.readUTF();
+
+                        // Establish a connection
+                        Connection connection = DriverManager.getConnection("jdbc:mysql://localhost/homework6", "root", "");
+
+                        //Create a statement
+                        Statement statement = connection.createStatement();
+
+                        // Execute a statement
+                        ResultSet resultSet = statement.executeQuery("select * from items where Item_Id = '" + strItemID + "'");
+
+                        //Recieves output from database
+                        while (resultSet.next()) {
+                            Item = resultSet.getString(2) + "," + resultSet.getString(3);
+
+                        }
+                        //CLoses connection
+                        connection.close();
+
+                        //Writes output to client
+                        outputToClient.writeUTF(Item);
+                        outputToClient.flush();
+
+                    }
+                } catch (IOException ex) {
+                } catch (ClassNotFoundException | SQLException ex) {
+
+                    Logger.getLogger(Program6.class.getName()).log(Level.SEVERE, null, ex);
+                }
+
+            } catch (IOException ex) {
+
+            }
+        }).start(); // Starts thread
+    }
+
+    public static void main(String[] args) {
+        launch(args);
+    }
+
+}
