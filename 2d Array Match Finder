@@ -1,0 +1,515 @@
+package pkg2d.array;
+
+import java.util.*;
+
+/* homework1:
+ Name:Scotty Jordan
+ Course, semester: CIS 357, Spring
+ Instructor: Dr. Cho
+ Date finished: 5/21/2019
+ Program description: This program allows the user to check through a hard-coded
+    2d array or a random 2d array. The random array allows the user to select the
+    dimensions of the 2d array. The program then will populate the array with 
+    random numbers (0-9) and check if there are any four consecutive numbers that 
+    match and their position in the 2d array. The consecutive numbers may go
+    from left to right, up to down, left to right, and right to left. If there are
+    no four consecutive numbers the project will ask the user if they would like to
+    check for three or five consecutive numbers following the same directions as 
+    before. Lastly, the project will find and store the lowest number(0-9) and 
+    display the that number and its position.
+ */
+public class Array {
+
+// Hashmap that can be used throughout the whole program
+    public static HashMap<Integer, String> output = new HashMap<>();
+
+    /*
+ * Main method that gets users input for fixed or random 2d array.
+     */
+    public static void main(String[] args) {
+
+// Integer to hold if the array will be fixed or not.
+        int intIsFixed = GetIntialInput();
+
+// Method that calls for fixed or random array.
+        FixedOrRandom(intIsFixed);
+    }
+
+    /*
+ * Function that returns a 1 for fixed or 2 for random.
+     */
+    public static int GetIntialInput() {
+
+// boolean for while loop
+        boolean booleanValid = false;
+
+// integer that holds user input
+        int intInput = 0;
+
+// scanner for getting users input
+        Scanner scannerInput = new Scanner(System.in);
+
+// while loop that ensures the correct user input is entered
+        while (!booleanValid) {
+            System.out.print("Enter a choice: (1 for fixed value, 2 for random values) ");
+            try {
+                intInput = scannerInput.nextInt();
+                if (intInput == 1 || intInput == 2) {
+                    booleanValid = true;
+                } else {
+                    System.out.println("Wrong input. Try again.");
+                    intInput = 0;
+                }
+
+// catch for non integer inputs
+            } catch (InputMismatchException e) {
+                System.out.println("Please enter a number.");
+                scannerInput.next();
+            }
+        }
+        return intInput;
+    }
+
+    //Method that directs for fixed or random array
+    public static void FixedOrRandom(int intIsFixed) {
+// Checks what the user input and directs to fixed or random
+        if (intIsFixed == 1) {
+            TestWithFixedValues();
+        } else {
+            TestWithRandomValues();
+        }
+    }
+
+    /* Method that creates a hard coded 2d array. Then calls methods
+that handle it.
+     */
+    public static void TestWithFixedValues() {
+
+// Hardcoded fixed array thats 6 x 7
+        int[][] array2DArray = new int[][]{{0, 1, 0, 3, 1, 4,
+            1}, {0, 1, 6, 8, 4, 0, 1}, {5, 6, 2, 4, 8, 2, 1},
+        {6, 5, 4, 1, 1, 9, 1}, {1, 3, 6, 1,
+            4, 0, 7}, {3, 3, 3, 3, 4, 0, 7}};
+
+// Method to find consecutive 4
+        MinimumConsecutiveSum(array2DArray, 4);
+
+// Method to print 2d array
+        PrintArray(array2DArray);
+
+// finds minimum sum of consecutive numbers
+        MinimumSum(4);
+    }
+
+    /*Method that calls other methods to get row and column. Then calls
+other methods to handle array.
+     */
+    public static void TestWithRandomValues() {
+
+// Integer to hold row and column
+        int intRow = 0;
+        int intColumn = 0;
+
+// array to hold returned value containing row and column
+        int[] arrayRowandColumn = GetRowAndColumn();
+
+// Sets row and column from array
+        intRow = arrayRowandColumn[0];
+        intColumn = arrayRowandColumn[1];
+
+// create 2d array by calling Generate2DArray
+        int[][] array2DArray = Generate2DArray(intRow, intColumn);
+
+// Method to find four consecutive numbers
+        MinimumConsecutiveSum(array2DArray, 4);
+
+// Prints array
+        PrintArray(array2DArray);
+
+// integer to hold returned value to find 3 - 5consecutive numbers
+        int intConsecutiveNumber = GetConsecutiveNumber();
+
+// Checks for new consecutive numbers
+        MinimumConsecutiveSum(array2DArray, intConsecutiveNumber);
+        MinimumSum(intConsecutiveNumber);
+    }
+
+    /*
+ * Function to get users input for finding consecutive numbers 3 - 5
+     */
+    public static int GetConsecutiveNumber() {
+
+// boolean to stop while loop
+        boolean booleanValid = false;
+
+// integer to hold input
+        int intInput = 0;
+
+// scanner to get user input
+        Scanner scannerInput = new Scanner(System.in);
+
+// while loop that ensures only correct inputs
+        while (!booleanValid) {
+            System.out.print("Enter consecutive number(3, 4, 5): ");
+            try {
+                intInput = scannerInput.nextInt();
+                if (intInput == 3 || intInput == 4
+                        || intInput == 5) {
+                    booleanValid = true;
+                } else {
+                    System.out.println("Number is out of bounds.");
+                    intInput = 0;
+                }
+            } catch (InputMismatchException e) {
+                System.out.println("Please enter a number.");
+                scannerInput.next();
+            }
+        }
+        return intInput;
+    }
+
+    /*
+ * Function that generates a random 2dArray
+     */
+    public static int[][] Generate2DArray(int intRow, int intColumn) {
+        Scanner intRandomKey = new Scanner(System.in);
+        int intRandom = 0;
+        System.out.print("Enter key for randomization. ");
+        intRandom = intRandomKey.nextInt();
+
+// Creates variable for random class
+        Random rand = new Random(intRandom);
+
+// Creates 2d array
+        int[][] array2DArray = new int[intRow][intColumn];
+
+// populates 2d array
+        for (int i = 0; i < array2DArray.length; i++) {
+            for (int j = 0; j < array2DArray[i].length;
+                    j++) {
+                array2DArray[i][j] = rand.nextInt(10);
+            }
+        }
+
+// returns 2d array that was created
+        return array2DArray;
+    }
+
+    // Function that returns an array that holds row and column
+    public static int[] GetRowAndColumn() {
+
+// array that holds row and column
+        int[] arrayRowAndColumn = new int[2];
+
+// integers for row and column
+        int intRow = 0;
+        int intColumn = 0;
+
+// boolean to stop while loop
+        boolean booleanValid = false;
+
+// scanner to get user input
+        Scanner scannerInput = new Scanner(System.in);
+
+// while loop that ensures only correct inputs
+        while (!booleanValid) {
+            System.out.print("Enter row and column: ");
+            try {
+                intRow = scannerInput.nextInt();
+                intColumn = scannerInput.nextInt();
+                if (intRow > 3 && intRow < 100
+                        || intColumn > 3 && intColumn < 100) {
+                    booleanValid = true;
+                } else {
+                    System.out.println("Number is out of bounds.");
+                    intRow = 0;
+                    intColumn = 0;
+                }
+            } catch (InputMismatchException e) {
+                System.out.println("Please enter anumber.");
+                scannerInput.next();
+            }
+        }
+// Set arrayRowAndColumn
+        arrayRowAndColumn[0] = intRow;
+        arrayRowAndColumn[1] = intColumn;
+        return arrayRowAndColumn;
+    }
+
+    // Method for directing how many consecutive numbers will be searched
+    public static void MinimumConsecutiveSum(int[][] array2DArray, int num) {
+        switch (num) {
+            case 3:
+                TestThree(array2DArray);
+                break;
+            case 4:
+                TestFour(array2DArray);
+                break;
+            case 5:
+                TestFive(array2DArray);
+                break;
+        }
+    }
+
+    //Method for searching for three consecutive numbers
+    public static void TestThree(int[][] arrayMyArray) {
+        String stringFound = " ";
+
+// Check Vertical
+        for (int i = 0; i < arrayMyArray.length - 2; i++) {
+            for (int j = 0; j < arrayMyArray[i].length;
+                    j++) {
+                if ((arrayMyArray[i][j]
+                        == arrayMyArray[i + 1][j]) && (arrayMyArray[i][j] == arrayMyArray[i + 2][j])) {
+                    output.put(arrayMyArray[i][j], "[Row " + i + ", Column " + j + "] - [Row " + (i + 3)
+                            + ", Column " + j + "]");
+                }
+            }
+        }
+
+// Check Horizontal
+        for (int i = 0; i < arrayMyArray.length; i++) {
+            for (int j = 0; j < arrayMyArray[i].length
+                    - 2; j++) {
+                if ((arrayMyArray[i][j]
+                        == arrayMyArray[i][j + 1]) && (arrayMyArray[i][j] == arrayMyArray[i][j + 2])) {
+                    output.put(arrayMyArray[i][j], "[Row " + i + ", Column " + j + "] - [Row " + i + ", Column "
+                            + (j + 3) + "]");
+                }
+            }
+        }
+
+// Check diagonal left to right
+        for (int i = 0; i < arrayMyArray.length - 2; i++) {
+            for (int j = 0; j < arrayMyArray[i].length
+                    - 2; j++) {
+                if ((arrayMyArray[i][j]
+                        == arrayMyArray[i + 1][j + 1])
+                        && (arrayMyArray[i][j] == arrayMyArray[i + 2][j + 2])) {
+                    output.put(arrayMyArray[i][j], "[Row " + i + ", Column " + j + "] - [Row " + (i + 3)
+                            + ", Column " + (j + 3) + "]");
+                }
+            }
+        }
+
+// Check diagonal right to left
+        for (int i = 3; i < arrayMyArray.length; i++) {
+            for (int j = 0; j < arrayMyArray[i].length
+                    - 2; j++) {
+                if ((arrayMyArray[i][j]
+                        == arrayMyArray[i - 1][j + 1])
+                        && (arrayMyArray[i][j] == arrayMyArray[i - 2][j + 2])) {
+                    output.put(arrayMyArray[i][j], "[Row " + i + ", Column " + j + "] - [Row " + (i - 3)
+                            + ", Column " + (j + 3) + "]");
+                }
+            }
+        }
+
+// Checks if hashmap is empty
+        if (output.isEmpty()) {
+            stringFound = "not found";
+            System.out.println("Consecutive Three: "
+                    + stringFound);
+        } else {
+            stringFound = "Found";
+            System.out.println("Consecutive Three: "
+                    + stringFound + " " + Arrays.asList(output.values()));
+        }
+    }
+
+    //Method for searching for four consecutive numbers
+    public static void TestFour(int[][] arrayMyArray) {
+        String stringFound = " ";
+
+// Check Vertical
+        for (int i = 0; i < arrayMyArray.length - 3; i++) {
+            for (int j = 0; j < arrayMyArray[i].length;
+                    j++) {
+                if ((arrayMyArray[i][j]
+                        == arrayMyArray[i + 1][j]) && (arrayMyArray[i][j] == arrayMyArray[i + 2][j])
+                        && (arrayMyArray[i][j] == arrayMyArray[i + 3][j])) {
+                    output.put(arrayMyArray[i][j], "[Row " + i + ", Column " + j + "] - [Row " + (i + 3)
+                            + ", Column " + j + "]");
+                }
+            }
+        }
+
+// Check Horizontal
+        for (int i = 0; i < arrayMyArray.length; i++) {
+            for (int j = 0; j < arrayMyArray[i].length
+                    - 3; j++) {
+                if ((arrayMyArray[i][j]
+                        == arrayMyArray[i][j + 1]) && (arrayMyArray[i][j] == arrayMyArray[i][j + 2])
+                        && (arrayMyArray[i][j] == arrayMyArray[i][j + 3])) {
+                    output.put(arrayMyArray[i][j], "[Row " + i + ", Column " + j + "] - [Row " + i + ", Column "
+                            + (j + 3) + "]");
+                }
+            }
+        }
+
+// Check diagonal left to right
+        for (int i = 0; i < arrayMyArray.length - 3; i++) {
+            for (int j = 0; j < arrayMyArray[i].length
+                    - 3; j++) {
+                if ((arrayMyArray[i][j]
+                        == arrayMyArray[i + 1][j + 1])
+                        && (arrayMyArray[i][j] == arrayMyArray[i + 2][j + 2])
+                        && (arrayMyArray[i][j] == arrayMyArray[i + 3][j + 3])) {
+                    output.put(arrayMyArray[i][j], "[Row " + i + ", Column " + j + "] - [Row " + (i + 3)
+                            + ", Column " + (j + 3) + "]");
+                }
+            }
+        }
+
+// Checks diagonal right to left
+        for (int i = 3; i < arrayMyArray.length; i++) {
+            for (int j = 0; j < arrayMyArray[i].length
+                    - 3; j++) {
+                if ((arrayMyArray[i][j]
+                        == arrayMyArray[i - 1][j + 1])
+                        && (arrayMyArray[i][j] == arrayMyArray[i - 2][j + 2])
+                        && (arrayMyArray[i][j] == arrayMyArray[i - 3][j + 3])) {
+                    output.put(arrayMyArray[i][j], "[Row " + i + ", Column " + j + "] - [Row " + (i - 3)
+                            + ", Column " + (j + 3) + "]");
+                }
+            }
+        }
+
+// Checks for empty hashmap
+        if (output.isEmpty()) {
+            stringFound = "not found";
+            System.out.println("Consecutive Four: "
+                    + stringFound);
+        } else {
+            stringFound = "Found";
+            System.out.println("Consecutive Four: "
+                    + stringFound + " " + Arrays.asList(output.values()));
+        }
+    }
+
+    //Method for searching for five consecutive numbers    
+    public static void TestFive(int[][] arrayMyArray) {
+        String stringFound = " ";
+
+// Check Vertical
+        for (int i = 0; i < arrayMyArray.length - 4; i++) {
+            for (int j = 0; j < arrayMyArray[i].length;
+                    j++) {
+                if ((arrayMyArray[i][j]
+                        == arrayMyArray[i + 1][j]) && (arrayMyArray[i][j] == arrayMyArray[i + 2][j])
+                        && (arrayMyArray[i][j] == arrayMyArray[i + 3][j])
+                        && (arrayMyArray[i][j] == arrayMyArray[i + 4][j])) {
+                    output.put(arrayMyArray[i][j], "[Row " + i + ", Column " + j + "] - [Row " + (i + 3)
+                            + ", Column " + j + "]");
+                }
+            }
+        }
+
+// Check Horizontal
+        for (int i = 0; i < arrayMyArray.length; i++) {
+            for (int j = 0; j < arrayMyArray[i].length
+                    - 4; j++) {
+                if ((arrayMyArray[i][j]
+                        == arrayMyArray[i][j + 1]) && (arrayMyArray[i][j] == arrayMyArray[i][j + 2])
+                        && (arrayMyArray[i][j] == arrayMyArray[i][j + 3])
+                        && (arrayMyArray[i][j] == arrayMyArray[i][j + 4])) {
+                    output.put(arrayMyArray[i][j], "[Row " + i + ", Column " + j + "] - [Row " + i + ", Column "
+                            + (j + 3) + "]");
+                }
+            }
+        }
+
+// Check diagonal left to right
+        for (int i = 0; i < arrayMyArray.length - 3; i++) {
+            for (int j = 0; j < arrayMyArray[i].length
+                    - 4; j++) {
+                if ((arrayMyArray[i][j]
+                        == arrayMyArray[i + 1][j + 1])
+                        && (arrayMyArray[i][j] == arrayMyArray[i + 2][j + 2])
+                        && (arrayMyArray[i][j] == arrayMyArray[i + 3][j + 3])
+                        && (arrayMyArray[i][j] == arrayMyArray[i + 4][j + 4])) {
+                    output.put(arrayMyArray[i][j], "[Row " + i + ", Column " + j + "] - [Row " + (i + 3)
+                            + ", Column " + (j + 3) + "]");
+                }
+            }
+        }
+
+// Check diagonal right to left
+        for (int i = 3; i < arrayMyArray.length; i++) {
+            for (int j = 0; j < arrayMyArray[i].length
+                    - 4; j++) {
+                if ((arrayMyArray[i][j]
+                        == arrayMyArray[i - 1][j + 1])
+                        && (arrayMyArray[i][j] == arrayMyArray[i - 2][j + 2])
+                        && (arrayMyArray[i][j] == arrayMyArray[i - 3][j + 3])
+                        && (arrayMyArray[i][j] == arrayMyArray[i - 4][j + 4])) {
+                    output.put(arrayMyArray[i][j], "[Row " + i + ", Column " + j + "] - [Row " + (i - 3)
+                            + ", Column " + (j + 3) + "]");
+                }
+            }
+        }
+
+// Check for empty hashmap
+        if (output.isEmpty()) {
+            stringFound = "not found";
+            System.out.println("Consecutive Five: "
+                    + stringFound);
+        } else {
+            stringFound = "Found";
+            System.out.println("Consecutive Five: "
+                    + stringFound + " " + Arrays.asList(output.values()));
+        }
+    }
+
+// Method to print array
+    public static void PrintArray(int[][] arrayMyArray) {
+
+// For loop to parse through 2d array
+        for (int i = 0; i < arrayMyArray.length; i++) {
+
+            for (int j = 0; j < (arrayMyArray[i].length); j++) {
+
+                System.out.print(arrayMyArray[i][j] + " ");
+            }
+            System.out.println(" ");
+        }
+        System.out.println(" ");
+    }
+
+// Method to find sum of minimum consecutive numbers
+    public static void MinimumSum(int num) {
+
+// Checks if hashmap is empty
+        if (!output.isEmpty()) {
+
+// hashmap is not empty
+// Collection of object integers to get keysfrom hashmap
+            Set<Integer> keys = output.keySet();
+
+// Array to hold keys
+            int[] array = new int[keys.size()];
+
+// integers to find minimum number
+            int index = 0;
+            int min = 10;
+            String stringNumber = " ";
+
+// for loop to move keys from collection into array
+            for (Integer element : keys) {
+                array[index++] = element;
+            }
+
+// for loop to find minimum key
+            for (int i = 0; i < array.length; i++) {
+                if (min > array[i]) {
+                    min = array[i];
+                }
+            }
+
+            System.out.println("Minimum of Consecutive: "
+                    + min + " " + output.get(min));
+        } else {
+            System.out.println("Minimum of Consecutive:not found");
+        }
+    }
+}
