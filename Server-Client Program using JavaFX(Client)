@@ -1,0 +1,352 @@
+/* Homework 06: Network + Database programming
+ Course: CIS357
+ Due date: 6/26/19
+ Completed date: 6/25/19
+ Name: Scotty Jordan
+ Instructor: Il-Hyung Cho
+ Program description: Client side of a server/client program. The client is
+ able to send item request to the server in return for a price. The client also
+ stores total sales for that client if they chose to view them.
+*/
+
+package program6client;
+
+//Imported libraries
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
+import java.net.Socket;
+import java.text.NumberFormat;
+import java.util.ArrayList;
+import java.util.List;
+import javafx.application.Application;
+import static javafx.application.Application.launch;
+import javafx.geometry.Insets;
+import javafx.scene.Scene;
+import javafx.scene.control.Alert;
+import javafx.scene.control.Button;
+import javafx.scene.control.Label;
+import javafx.scene.control.ListView;
+import javafx.scene.control.TextField;
+import javafx.scene.layout.GridPane;
+import javafx.stage.Stage;
+
+//Sales class to record sales
+class Sales {
+
+//Variables for each item sale
+    int saleQuantity;
+    String itemName;
+
+    int salePrice;
+
+//No argument constructor
+    public Sales() {
+    }
+
+//Constructor with arguments to set variables
+    public Sales(int saleNumber, String name, int price) {
+        saleQuantity = saleNumber;
+        itemName = name;
+        salePrice = price;
+    }
+
+//Method to set quantity
+    public void setQuantity(int quantity) {
+        saleQuantity = quantity;
+    }
+
+//Method to set price
+    public void setPrice(int price) {
+        salePrice = price;
+    }
+
+//Method to get quantity
+    public int getQuantity() {
+        return saleQuantity;
+    }
+
+//Method to get item name
+    public String getName() {
+        return itemName;
+    }
+
+//Method to get price
+    public int getPrice() {
+        return salePrice;
+    }
+}
+
+//Main class which holds all the client program.
+public class Program6Client extends Application {
+
+    //Global alert to display messages
+    Alert alert = new Alert(Alert.AlertType.INFORMATION);
+
+    //Global input and output streams
+    DataOutputStream toServer = null;
+    DataInputStream fromServer = null;
+
+    //Global array list of class Sales. Holds Sales
+    List<Sales> mySales = new ArrayList<>();
+
+    //Format for currency
+    NumberFormat formatter = NumberFormat.getCurrencyInstance();
+
+    //Stringbuilder to display sale in alert box
+    StringBuilder sb = new StringBuilder();
+
+    @Override
+    public void start(Stage primaryStage) {
+
+        //Grid pane for formatting gui of client
+        GridPane root2 = new GridPane();
+        root2.setVgap(4);
+        root2.setHgap(10);
+        root2.setPadding(new Insets(10, 5, 5, 20));
+
+        //Buttons for add and pay
+        Button btnAdd = new Button("Add");
+        btnAdd.setMinWidth(100);
+        Button btnPay = new Button("Pay");
+        btnPay.setMinWidth(75);
+
+        //TextField for item code, quantity, and payment
+        TextField txtItemCode = new TextField();
+        TextField txtQuantity = new TextField();
+        TextField txtPayment = new TextField();
+
+        //List view to hold sales
+        ListView lvItems = new ListView();
+        lvItems.setMaxHeight(100);
+
+        //Places items into gridpane
+        root2.add(new Label("Item Code:"), 0, 0);
+        root2.add(txtItemCode, 1, 0);
+        root2.add(new Label("Quantity:"), 0, 1);
+        root2.add(txtQuantity, 1, 1);
+        root2.add(btnAdd, 2, 1);
+        root2.add(lvItems, 0, 2, 3, 2);
+        root2.add(btnPay, 0, 4);
+        root2.add(txtPayment, 1, 4);
+
+        //Create scene with grid pane
+        Scene scene1 = new Scene(root2, 382, 210);
+        primaryStage.setScene(scene1);
+        primaryStage.show();
+
+        //When the pay button is pressed
+        btnPay.setOnAction(e -> {
+
+            //Variables to hold total from sales, total after tax, andamount paid
+            int Total = 0;
+            double TaxTotal = 0;
+            double Payment = 0;
+
+            //For loop to get total from mySales
+            for (Sales items : mySales) {
+                Total += items.getPrice();
+            }
+
+            //Add tax
+            TaxTotal = Total + (Total * .06);
+
+            //If payment textfield was not given an input
+            if (txtPayment.getText().isEmpty()) {
+                alert.setContentText(
+                        "Please enter a correct payment: < 0");
+                alert.showAndWait();
+            }
+
+            //Makes sure payment is bigger than zero and greater than the
+            if (Integer.parseInt(txtPayment.getText()) > 0) {
+                double TenderedTotal
+                        = Integer.parseInt(txtPayment.getText());
+                if (TenderedTotal > TaxTotal) {
+                    Payment = TenderedTotal;
+                    TenderedTotal = TenderedTotal - TaxTotal;
+                    //Alert box to display sale
+                    alert.setTitle("Final Sale");
+                    alert.setHeaderText("Items purchased.");
+
+                    //use String builder to create string for reciept
+                    for (Sales items : mySales) {
+                        sb.append((int) items.saleQuantity);
+                        sb.append(" ");
+                        sb.append(items.itemName);
+                        sb.append(" ");
+                        sb.append(formatter.format(items.salePrice));
+                        sb.append("\n");
+                    }
+                    sb.append("\n");
+                    sb.append("Total Cost: ");
+                    sb.append(formatter.format(TaxTotal));
+                    sb.append("\n");
+
+                    sb.append("Payment: ");
+                    sb.append(formatter.format(Payment));
+                    sb.append("\n");
+                    sb.append("Change: ");
+                    sb.append(formatter.format(TenderedTotal));
+
+                    //Show receipt
+                    alert.setContentText(sb.toString());
+                    alert.showAndWait();
+                }
+            }
+
+        });
+
+        //Action when add button is pressed
+        btnAdd.setOnAction(e -> {
+
+            //Try statement to catch exceptions
+            try {
+                //If itemCode is anything but A - J then shows messages
+
+                if (txtItemCode.getText().equals("A")
+                        || txtItemCode.getText().equals("B") || txtItemCode.getText().equals("C")
+                        || txtItemCode.getText().equals("D") || txtItemCode.getText().equals("E")
+                        || txtItemCode.getText().equals("F") || txtItemCode.getText().equals("G")
+                        || txtItemCode.getText().equals("H") || txtItemCode.getText().equals("I")
+                        || txtItemCode.getText().equals("J")) {
+
+                    //If txtQuantity is empty
+                    if (txtQuantity.getText().isEmpty()) {
+                        alert.setContentText("Please enter a correct quantity: < 0");
+                        alert.showAndWait();
+                    } else {
+
+                        //Main part for add
+                        //If quantity is greater than 0
+                        if (Integer.parseInt(txtQuantity.getText()) > 0) {
+
+                            //Write to server the item code
+                            toServer.writeUTF(txtItemCode.getText());
+                            toServer.flush();
+
+                            //Read from server
+                            String fromDatabase = fromServer.readUTF();
+
+                            //Integer to hold quanitiy
+                            int intMyQuantity = Integer.parseInt(txtQuantity.getText());
+
+                            //Boolean for data transfering
+                            boolean exists = false;
+
+                            //Split the string that was read from server
+                            String[] strDatabaseInput = fromDatabase.split(",");
+
+                            //Set String and integer with split string
+                            String ItemName = strDatabaseInput[0];
+
+                            int ItemPrice = Integer.parseInt(strDatabaseInput[1]);
+
+                            //Checks if arraylist is empty, if so it will add new sale
+                            if (mySales.isEmpty()) {
+                                Sales newItem = new Sales(intMyQuantity,
+                                        ItemName, (ItemPrice * intMyQuantity));
+                                mySales.add(newItem);
+                                exists = true;
+
+                                //If mySales is not empty
+                            } else {
+
+                                //For loop to parse through my sales.
+                                for (Sales items : mySales) {
+
+                                    //If mySales includes current item
+                                    if (ItemName.equals(items.itemName)) {
+
+                                        items.setQuantity(items.saleQuantity + intMyQuantity);
+                                        items.setPrice(items.getPrice() + (ItemPrice * intMyQuantity));
+                                        exists = true;
+
+                                    }
+                                }
+                                //If mySales doesn't include current item
+
+                                if (!exists) {
+                                    Sales newItem = new Sales(intMyQuantity, ItemName, (ItemPrice * intMyQuantity));
+                                    mySales.add(newItem);
+
+                                }
+                            }
+
+                            //Method to fill list view
+                            FillListView(lvItems);
+
+                        } else {
+
+//Message to let user know about quantity
+                            alert.setContentText("Please enter a correct quantity: < 0");
+                            alert.showAndWait();
+                        }
+                    }
+                } else {
+                    //Message to let user know about input
+
+                    alert.setContentText("Please enter a correct item id: A - J");
+                    alert.showAndWait();
+
+                }
+            } catch (IOException ej) {
+                alert.setContentText("nope");
+                alert.showAndWait();
+            }
+        });
+        try {
+            // Create a socket to connect to the server
+
+            Socket socket = new Socket("localhost", 8001);
+
+            // Create an input stream to receive data from the server
+            fromServer = new DataInputStream(socket.getInputStream());
+
+            // Create an output stream to send data to the server
+            toServer = new DataOutputStream(socket.getOutputStream());
+
+            //Display message about connection to server
+            if (socket.isConnected()) {
+                alert.setContentText("Connected");
+                alert.showAndWait();
+            }
+
+        } catch (IOException ex) {
+
+        }
+
+    }
+
+    //Method to fill listview
+    public void FillListView(ListView output) {
+
+        //Variables to hold total and tax total.
+        int Total = 0;
+        double TaxTotal = 0;
+
+        //Clears listview
+        output.getItems().clear();
+
+        //Addes "Items" into list view
+        output.getItems().add("Items");
+
+        //For loop to add mySales to list view
+        for (Sales items : mySales) {
+            output.getItems().add(items.itemName + " " + (int) items.saleQuantity + " " + formatter.format(items.getPrice()));
+            Total += items.getPrice();
+        }
+
+        //Set tax
+        TaxTotal = Total + (Total * .06);
+
+        //Dispaly items
+        output.getItems().add("Total Price: " + formatter.format(TaxTotal));
+
+    }
+
+    public static void main(String[] args) {
+        launch(args);
+    }
+
+}
