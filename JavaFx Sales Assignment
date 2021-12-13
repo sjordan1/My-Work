@@ -1,0 +1,686 @@
+/*  Homework 04: POST System
+    Course: CIS357
+    Due date: 6/17/19
+    Completed date: 6/17/19
+    Name: Scotty Jordan
+    Instructor: Il-Hyung Cho
+    Program description: This program displays main GUI screen. Once new sale button is clicked it moves to the second GUI
+      screen. On the second GUI screen the user may select 10 items based on their item ID. Once seleceted the item name and
+      price are displayed. The user may select a quantity. Once this is entered the total is displayed. The user clicks add to add
+      the item to their sale. This is displayed into a list view. The user may select more items. The total and total with tax are 
+      displayed dynamically. The user the enters a tendered amount. Checkout is then pressed. If negative the user will be
+      alerted to enter a new amount. Once this amount is met the user can select done. This shows all items bought. The user 
+*/    then selects ok to go back to the beginning GUI screen. There they can select another sale or view all sales.
+
+
+package javafxapplication4;
+
+
+import javafx.application.Application;
+import javafx.geometry.Insets;
+import javafx.scene.Scene;
+import javafx.scene.control.Button;
+import javafx.scene.control.Label;
+import javafx.scene.control.TextField;
+import javafx.scene.layout.GridPane;
+import javafx.stage.Stage;
+import javafx.scene.control.ListView;
+import javafx.scene.text.Text;
+import javafx.scene.text.Font;
+import javafx.scene.shape.Line;
+import javafx.scene.layout.Pane;
+import java.util.*;
+import javafx.scene.control.ComboBox;
+import javafx.scene.control.Alert;
+import java.text.NumberFormat;
+import javafx.stage.FileChooser;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.util.Scanner;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+//Class to hold the items for Combo Box;
+//Holds ID, Name, and Price.
+class Items {
+
+    String itemID;
+    String itemName;
+    double itemPrice;
+
+    public Items() {
+    }
+
+    public Items(String ItemID, String ItemName, double ItemPrice) {
+        itemID = ItemID;
+        itemName = ItemName;
+        itemPrice = ItemPrice;
+    }
+
+    public String getID() {
+        return itemID;
+    }
+
+    public String getName() {
+        return itemName;
+    }
+
+    public double getPrice() {
+        return itemPrice;
+    }
+}
+
+//Class to hold individual sales.
+//Holds Quantity, Name, and Price
+class Sales {
+
+    double saleQuantity;
+    String itemName;
+    double salePrice;
+
+    public Sales() {
+    }
+
+    public Sales(double saleNumber, String name, double price) {
+        saleQuantity = saleNumber;
+        itemName = name;
+        salePrice = price;
+    }
+
+    public void setQuantity(double quantity) {
+        saleQuantity = quantity;
+    }
+
+    public void setPrice(double price) {
+        salePrice = price;
+    }
+
+    public double getQuantity() {
+        return saleQuantity;
+    }
+
+    public String getName() {
+        return itemName;
+    }
+
+    public double getPrice() {
+        return salePrice;
+    }
+
+}
+
+public class JavaFXApplication4 extends Application {
+
+    //Global Scene1 and 2
+    Scene scene1, scene2;
+
+    //Global list for current sales and all sales.
+    //Creates array of Sales class.
+    List<Sales> mySales = new ArrayList<>();
+    List<Sales> allSales = new ArrayList<>();
+
+    //Format for currency
+    NumberFormat formatter = NumberFormat.getCurrencyInstance();
+
+    //Global alert used to show pop up messages
+    Alert alert = new Alert(Alert.AlertType.INFORMATION);
+
+    //Total sales keeps track between scenes
+    double totalSales = 0;
+    Text txtFooterText = new Text(40, 120, "Total Sales for the day " + formatter.format(totalSales));
+
+    //Start of the GUI screen
+    @Override
+    public void start(Stage primaryStage) {
+
+        //Creates scene 1 and 2
+        SetScene1(primaryStage);
+        SetScene2(primaryStage);
+
+        //Display GUI
+        primaryStage.setScene(scene1);
+        primaryStage.show();
+    }
+
+    public void SetScene2(Stage primaryStage) {
+        //Scene 2 set up
+
+        //Combobox
+        ComboBox cbItems = new ComboBox();
+        cbItems.setPrefWidth(205);
+
+        //Labels
+        Label itemName = new Label("NA");
+        Label itemPrice = new Label("$0.00");
+        Label itemTotal = new Label("$0.00");
+        Label saleSub = new Label("$0.00");
+        Label saleTax = new Label("$0.00");
+        Label saleChange = new Label("$0.00");
+
+        //TextField
+        TextField txtQuantity = new TextField();
+        txtQuantity.setMaxWidth(125);
+        TextField txtTendered = new TextField();
+        txtTendered.setMaxWidth(125);
+
+        //Buttons
+        Button btnAdd = new Button("Add");
+        btnAdd.setPrefWidth(205);
+        Button btnCheckout = new Button("Checkout");
+        Button btnOk = new Button("Ok");
+        Button btnDone = new Button("Done");
+
+        //ListView
+        ListView itemOutput = new ListView();
+        itemOutput.setMaxHeight(150);
+
+        //Creats pane to hold items once entered in the gridpane
+        Pane Holder = new Pane();
+
+        //GridPane for formatting
+        GridPane gridPItems = new GridPane();
+        gridPItems.setVgap(4);
+        gridPItems.setHgap(10);
+        gridPItems.setPadding(new Insets(10, 5, 5, 20));
+        gridPItems.add(new Label("Item ID: "), 0, 0);
+        gridPItems.add(cbItems, 1, 0);
+        gridPItems.add(new Label("Item Name: "), 0, 1);
+        gridPItems.add(itemName, 1, 1);
+        gridPItems.add(new Label("Item Price: "), 0, 2);
+        gridPItems.add(itemPrice, 1, 2);
+        gridPItems.add(new Label("Quantity: "), 0, 3);
+        gridPItems.add(txtQuantity, 1, 3);
+        gridPItems.add(new Label("Item Total: "), 0, 4);
+        gridPItems.add(itemTotal, 1, 4);
+        gridPItems.add(btnAdd, 1, 5, 2, 5);
+        gridPItems.add(itemOutput, 0, 15, 2, 15);
+        gridPItems.add(new Label("Sale Sub Total: "), 0, 30);
+        gridPItems.add(saleSub, 1, 30);
+        gridPItems.add(new Label("Sale Tax Total(%6); "), 0, 31);
+        gridPItems.add(saleTax, 1, 31);
+        gridPItems.add(new Label("Tendered Amount: "), 0, 32);
+        gridPItems.add(txtTendered, 1, 32);
+        gridPItems.add(btnCheckout, 0, 33);
+        gridPItems.add(new Label("Change: "), 0, 34);
+        gridPItems.add(saleChange, 1, 34);
+        gridPItems.add(btnOk, 1, 35);
+        gridPItems.add(btnDone, 0, 35);
+
+        //Holder.getChildren().add(btnCheckout);
+        //Places gridpanel into panel
+        Holder.getChildren().add(gridPItems);
+
+        //Line to divide second gui items.
+        Line divider = new Line();
+        divider.setStartX(0.0f);
+        divider.setStartY(170.0f);
+        divider.setEndX(400.0f);
+        divider.setEndY(170.0f);
+
+        //place line into panel
+        Holder.getChildren().add(divider);
+
+        //Set scene 2
+        scene2 = new Scene(Holder, 355, 500);
+
+        //Scene2 code
+        
+        //Array of Class Items. I couldnt get file chooser to work so manually placed items in.
+        Items[] inventory = new Items[10];
+        inventory[0] = new Items("A", "Cell Phone", 10);
+        inventory[1] = new Items("B", "Tablet", 25);
+        inventory[2] = new Items("C", "Headphone", 100);
+        inventory[3] = new Items("D", "Laptop", 9);
+        inventory[4] = new Items("E", "Notebook", 50);
+        inventory[5] = new Items("F", "USB", 3);
+        inventory[6] = new Items("G", "PS4", 200);
+        inventory[7] = new Items("H", "XBOX ONE", 250);
+        inventory[8] = new Items("I", "Computer", 35);
+        inventory[9] = new Items("J", "TV", 99);
+
+        /*FileChooser fileChooser = new FileChooser();
+        fileChooser.setTitle("Open Resource File");
+        File file = fileChooser.showOpenDialog(primaryStage);
+        if (file != null) {
+            try {
+                Scanner in = new Scanner(file);
+                while (in.hasNext()){ 
+                 int i = 0;
+                String data = in.nextLine();
+                String[] input = data.split(",");
+                inventory[i] = new Items(input[0], input[1], Integer.valueOf(input[2]));
+                }
+            } catch (FileNotFoundException ex) {
+                Logger.getLogger(JavaFXApplication4.class.getName()).log(Level.SEVERE, null, ex);
+            }
+        }
+         */
+        
+        //Method for ok button on scene 2.
+        BtnOk(primaryStage, btnOk, cbItems, itemName, itemPrice, itemTotal, saleSub, saleTax, saleChange, txtQuantity, txtTendered, itemOutput);
+       
+        //Drop down menu for combo box
+        DropDownItems(cbItems);
+        
+        //Method for handeling item selection in combo box
+        ClickEventForComboBox(inventory, itemName, itemPrice, cbItems, itemTotal, txtQuantity);
+
+        //Method for quantity and totals
+        QuantityAndTotalChange(inventory, cbItems, txtQuantity, itemTotal);
+        
+        //Method for placing sale into array list
+        AddSale(inventory, cbItems, txtQuantity, btnAdd, itemOutput, saleSub, saleTax);
+        
+        //Method to check tendered amount of sale
+        Checkout(btnCheckout, txtTendered, saleChange);
+
+        //Method to handle done button
+        BtnDone(btnDone);
+    }
+
+    //Method that is used when the done button is clicked. Shows alert with sale information.
+    public void BtnDone(Button btnDone) {
+        
+        //Event Handeler for done button
+        btnDone.setOnAction(e -> {
+            
+            //Double variables for subtotal  and subtotal with tax
+            double subTotal = 0;
+            double subTax = 0;
+            
+            //Stringbuilder to display sale in alert box
+            StringBuilder sb = new StringBuilder();
+
+            //For loop to get total amount for sale.
+            for (Sales items : mySales) {
+                subTotal += items.getPrice();
+            }
+
+            //Subtotal added with tax
+            subTax = ((subTotal * .06) + subTotal);
+
+            //Alert box to display sale
+            alert.setTitle("Final Sale");
+            alert.setHeaderText("Items purchased.");
+            for (Sales items : mySales) {
+                sb.append((int) items.saleQuantity);
+                sb.append(" ");
+                sb.append(items.itemName);
+                sb.append(" ");
+                sb.append(formatter.format(items.salePrice));
+                sb.append("\n");
+            }
+            sb.append("Total Cost: ");
+            sb.append(subTax);
+
+            totalSales += subTax;
+            alert.setContentText(sb.toString());
+            alert.showAndWait();
+        });
+    }
+
+    //Method to handle checkout button
+    public void Checkout(Button btnCheckout, TextField txtTendered, Label saleChange) {
+       
+        //Event handler for button
+        btnCheckout.setOnAction(e -> {
+            //Doubles for total with tax, sale total, and change
+            double taxTotal = 0;
+            double saleTotal = 0;
+            double finalChange = 0;
+            
+            //For loop to get sale total
+            for (Sales items : mySales) {
+                saleTotal += items.salePrice;
+            }
+            
+            //Total with tax
+            taxTotal = ((saleTotal * 0.06) + saleTotal);
+
+            //Change with amount tendered
+            finalChange = Double.parseDouble(txtTendered.getText()) - taxTotal;
+            
+            //If change is negative alert message
+            if (finalChange < 0) {
+                alert.setTitle("Insufficiant Funds");
+                alert.setHeaderText("Please input correct amount.");
+                alert.setContentText("");
+                alert.showAndWait();
+            } else {
+                //If positive change is displayed
+                saleChange.setText(formatter.format(finalChange));
+            }
+        });
+    }
+
+    //Method to dispaly subtotal and tax
+    public void SubandTax(Label saleSub, Label saleTax) {
+        
+        //Doubles for subtotal and tax
+        double subTotal = 0;
+        double subTax = 0;
+
+        //For loop to find total
+        for (Sales items : mySales) {
+            subTotal += items.getPrice();
+        }
+
+        //Displays total
+        saleSub.setText(formatter.format(subTotal));
+        
+        //Tax added to subtotal
+        subTax = ((subTotal * .06) + subTotal);
+        
+        //Tax displayed
+        saleTax.setText(formatter.format(subTax));
+    }
+
+    //Method to handle add button
+    public void AddSale(Items[] inventory, ComboBox cbItems, TextField txtQuantity, Button btnAdd, ListView itemOutput, Label saleSub, Label saleTax) {
+        
+        //Handler for add button
+        btnAdd.setOnAction(e -> {
+            
+            //Double for price
+            double price;
+            
+            //Boolean for data transfering
+            boolean exists = false;
+            
+            //Double for quantity. Recieves from txtQuantity
+            double quantity = Double.parseDouble(txtQuantity.getText());
+            
+            //String from combo box
+            String ID = (String) cbItems.getValue();
+
+            //If combo box was not selected show alert. (This does not work)
+            if (cbItems.getValue() == null) {
+                alert.setTitle("No Item Selected");
+                alert.setHeaderText("Please select an item.");
+                alert.setContentText("");
+                alert.showAndWait();
+            }
+
+            //If txtQuantity is empty string alert message(This does not work)
+            if (txtQuantity.getText().equals("")) {
+                alert.setTitle("Quantity");
+                alert.setHeaderText("Please enter a quantity.");
+                alert.setContentText("");
+                alert.showAndWait();
+            }
+
+            //For loop to place data into mySales
+            for (int i = 0; i <= 9; i++) {
+
+                //gets price from inventory array.
+                if (ID.equals(inventory[i].getID())) {
+                    price = inventory[i].getPrice();
+
+                    //If mySales is empty
+                    if (mySales.isEmpty()) {
+                        Sales newItem = new Sales(quantity, inventory[i].getName(), (inventory[i].getPrice() * quantity));
+                        mySales.add(newItem);
+                        exists = true;
+
+                        //If mySales is not empty 
+                    } else {
+                        
+                        //For loop to parse through my sales.
+                        for (Sales items : mySales) {
+
+                            //If mySales includes current item
+                            if (inventory[i].getName().equals(items.itemName)) {
+                                items.setQuantity(items.saleQuantity + quantity);
+                                items.setPrice(items.getPrice() + (inventory[i].getPrice() * quantity));
+                                exists = true;
+                            }
+
+                        }
+                        //If mySales doesn't include current item
+                        if (!exists) {
+                            Sales newItem = new Sales(quantity, inventory[i].getName(), (inventory[i].getPrice() * quantity));
+                            mySales.add(newItem);
+                        }
+                    }
+                }
+            }
+            //Method that fills listView
+            FillListView(itemOutput, saleSub, saleTax);
+        });
+    }
+
+    //Fills list view with mySales
+    public void FillListView(ListView itemOutput, Label saleSub, Label saleTax) {
+      
+        //Clears listview
+        itemOutput.getItems().clear();
+       
+        //Addes "Items" into list view
+        itemOutput.getItems().add("Items");
+        
+        //For loop to add mySales to list view
+        for (Sales items : mySales) {
+            itemOutput.getItems().add((int) items.saleQuantity + " " + items.itemName + " " + formatter.format(items.getPrice()));
+        }
+
+        //Method to get subtotal and tax
+        SubandTax(saleSub, saleTax);
+        
+    }
+
+    //Method to handel diffent numbers entered into quantity
+    public void QuantityAndTotalChange(Items[] inventory, ComboBox cbItems, TextField txtQuantity, Label itemTotal) {
+      
+        //Listener for quantity
+        txtQuantity.textProperty().addListener((observable, oldValue, newValue) -> {
+           
+            //If quantity doesn't equal empty string
+            if (!txtQuantity.getText().equals("")) {
+                
+                //ID recieved from combo box
+                String ID = (String) cbItems.getValue();
+      
+                //Double from quantity
+                double Total = Double.parseDouble(txtQuantity.getText());
+                
+                //For loop to parse through inventory
+                for (int i = 0; i <= 9; i++) {
+                    if (ID.equals(inventory[i].getID())) {
+                        Total = Total * inventory[i].getPrice();
+                        itemTotal.setText("$" + String.valueOf(Total));
+                    }
+                }
+            }
+        });
+    }
+
+    //Method for combo box selection
+    public void ClickEventForComboBox(Items[] inventory, Label itemName, Label itemPrice, ComboBox cbItems, Label itemTotal, TextField txtQuantity) {
+       
+        //Combobox Event Handler
+        cbItems.setOnAction(e -> {
+            
+            //String to hold ID
+            String ID = (String) cbItems.getValue();
+            for (int i = 0; i <= 9; i++) {
+                if (ID.equals(inventory[i].getID())) {
+                    
+                    //Sets name, price, and total label
+                    itemName.setText(inventory[i].getName());
+                    itemPrice.setText("$" + String.valueOf(inventory[i].getPrice()));
+                    
+                    //If new item is selected resets total and quantity
+                    itemTotal.setText("$0.00");
+                    txtQuantity.setText("");
+                }
+            }
+        });
+    }
+
+    
+    //Method to handle ok button
+    public void BtnOk(Stage primaryStage, Button btnOk, ComboBox cbItems, Label itemName, Label itemPrice, Label itemTotal, Label saleSub, Label saleTax, Label saleChange, TextField txtQuantity, TextField txtTendered, ListView itemOutput) {
+        btnOk.setOnAction(e -> {
+            
+            //clears scene2
+            cbItems.valueProperty().set(null);
+            itemName.setText("NA");
+            itemPrice.setText("$0.00");
+            itemTotal.setText("$0.00");
+            saleSub.setText("$0.00");
+            saleTax.setText("$0.00");
+            saleChange.setText("$0.00");
+            txtQuantity.setText("");
+            txtTendered.setText("");
+            itemOutput.getItems().clear();
+
+            //Method to fill allSales
+            FillSecondArray();
+
+            //Clears mySales
+            mySales.clear();
+
+            //Sets footerText on scene1
+            txtFooterText.setText("Total Sales for the day " + formatter.format(totalSales));
+            
+            //Shows scene1
+            primaryStage.setScene(scene1);
+            primaryStage.setTitle("Post Register");
+
+        });
+    }
+
+    //Method to fill allSales arrayList
+    public void FillSecondArray() {
+        //Boolean for iteration
+        boolean exists = false;
+        
+        //If all Sales is empty adds to allSales
+        if (allSales.isEmpty()) {
+            for (Sales items : mySales) {
+                Sales convert = new Sales(items.saleQuantity, items.itemName, items.salePrice);
+                allSales.add(convert);
+                exists = true;
+            }
+            
+            //If allSales contains data
+        } else {
+            
+            //Double for loop to place duplicate item names with new quantity and total price
+            for (Sales items : mySales) {
+                for (Sales newItems : allSales) {
+                    if (items.itemName.equals(newItems.itemName)) {
+                        newItems.saleQuantity = items.saleQuantity + newItems.saleQuantity;
+                        newItems.salePrice = items.salePrice + newItems.salePrice;
+                        exists = true;
+                    }
+                }
+            }
+
+            //If duplicate doesn't exist adds item.
+            if (!exists) {
+                for (Sales items : mySales) {
+                    Sales convert = new Sales(items.saleQuantity, items.itemName, items.salePrice);
+                    allSales.add(convert);
+                }
+            }
+        }
+    }
+
+    //Method to fill combobox
+    public void DropDownItems(ComboBox cbItems) {
+        //Adds item ID's
+        cbItems.getItems().add("A");
+        cbItems.getItems().add("B");
+        cbItems.getItems().add("C");
+        cbItems.getItems().add("D");
+        cbItems.getItems().add("E");
+        cbItems.getItems().add("F");
+        cbItems.getItems().add("G");
+        cbItems.getItems().add("H");
+        cbItems.getItems().add("I");
+        cbItems.getItems().add("J");
+
+    }
+
+    //Method for  Scene1
+    public void SetScene1(Stage primaryStage) {
+        //Scene 1
+        primaryStage.setTitle("Post Register");
+        Pane paneInitial = new Pane();
+        paneInitial.setPadding(new Insets(10, 10, 30, 10));
+
+        //Add Header
+        Text txtHeadingText = new Text(30, 40, "Welcome to the POST system!!!");
+        txtHeadingText.setFont(Font.font("Courier", 20));
+        paneInitial.getChildren().add(txtHeadingText);
+
+        //Adds button 
+        Button btnNewSale = new Button("New Sale");
+        btnNewSale.setTranslateX(90);
+        btnNewSale.setTranslateY(60);
+        btnNewSale.setMinWidth(150);
+        paneInitial.getChildren().add(btnNewSale);
+        Button btnAllSales = new Button("Total Sales");
+        btnAllSales.setTranslateX(90);
+        btnAllSales.setTranslateY(130);
+        btnAllSales.setMinWidth(150);
+        paneInitial.getChildren().add(btnAllSales);
+
+        //Add Footer Text            
+        txtFooterText.setFont(Font.font("Courier", 20));
+        paneInitial.getChildren().add(txtFooterText);
+        scene1 = new Scene(paneInitial);
+        btnNewSale.setOnAction(e -> {
+            primaryStage.setScene(scene2);
+            primaryStage.setTitle("New Sale");
+        });
+
+        //Method to show total sales
+        ShowTotalSales(btnAllSales);
+    }
+
+    //Method for total sales
+    public void ShowTotalSales(Button btnAllSales) {
+        btnAllSales.setOnAction(e -> {
+            
+            //Doubles for total and tax
+            double subTotal = 0;
+            double subTax = 0;
+            
+            //String builder to display sales
+            StringBuilder sb = new StringBuilder();
+
+            //For loop for total sales
+            for (Sales items : allSales) {
+                subTotal += items.getPrice();
+            }
+
+            //Gets total with tax
+            subTax = ((subTotal * .06) + subTotal);
+
+            //Alert to display sales
+            alert.setTitle("Total Sales");
+            alert.setHeaderText("Items purchased.");
+            for (Sales items : allSales) {
+                sb.append((int) items.saleQuantity);
+                sb.append(" ");
+                sb.append(items.itemName);
+                sb.append(" ");
+                sb.append(formatter.format(items.salePrice));
+                sb.append("\n");
+            }
+            sb.append("Total Cost: ");
+            sb.append(formatter.format(subTax));
+
+            alert.setContentText(sb.toString());
+            alert.showAndWait();
+        });
+    }
+    
+    //This is the main method. Calls args
+    public static void main(String[] args) {
+        launch(args);
+    }
+
+}
